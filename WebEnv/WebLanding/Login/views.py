@@ -3,12 +3,7 @@ from django.views.generic import View
 from django.shortcuts import redirect
 from django.contrib.auth import authenticate
 
-# Create your views here.
-def LoginView(request):
-    return render(request, 'Login.html',{})
-
-def LandingView(request):
-    return render(request, 'Landing.html',{})
+from django.contrib.auth import login as login_django
 
 
 class LoginClass(View):
@@ -16,7 +11,15 @@ class LoginClass(View):
     templates_ok = 'Landing/Landing.html'
     def get(self, request, *args, **kwargs):
         #print("SOY GET")
+        if request.user.is_authenticated:
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            else:
+                return redirect('Dashboard:Dashboard')
         return render(request, self.templates,{})
+
+
     def post (self, request, *args, **kwargs):
         user_post = request.POST['user']
         password_post = request.POST['password']
@@ -24,9 +27,15 @@ class LoginClass(View):
         user_session = authenticate(username = user_post, password = password_post)
         #ACÁ LO VALIDO 
         if user_session is not None:
-            #return redirect('Login:Dashboard')
-            return redirect('Login:Dashboard')
-        else:
+            login_django(
+                request, user_session
+            )
+            next_url = request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            else:
+                return redirect('Dashboard:Dashboard')
+        else: 
             self.message = 'Usuario o contraseña incorrecto'
         
         return render(request, self.templates, self.get_context())
@@ -36,13 +45,4 @@ class LoginClass(View):
            'error': self.message
         }
 
-class LandingClass(View):
-    templates_ok = 'Landing/Landing.html'
-    def get(self, request, *args, **kwargs):
-        return render(request,self.templates_ok,{})
 
-class DashboardClass(View):
-    templates_okidoki = 'Dashboard/Dashboard.html'
-    def get (self,request,*args,**kwargs):
-        #printn("GET DE DASHBOARD")
-        return render(request,self.templates_okidoki,{})
